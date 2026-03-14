@@ -1,0 +1,7 @@
+* text=auto
+
+*.onnx binary
+*.onnx.json text
+*.dll binary
+*.exe binary
+*.ort binary

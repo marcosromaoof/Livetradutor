@@ -1,0 +1,49 @@
+name: Release Windows EXE
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-release:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt
+          python -m pip install -r requirements-build.txt
+
+      - name: Build EXE
+        run: python build_exe.py
+
+      - name: Pack release assets
+        shell: pwsh
+        run: |
+          $tag = "${{ github.ref_name }}"
+          $zip = "LiveTradutor-$tag-win64.zip"
+          Compress-Archive -Path "dist/LiveTradutor/*" -DestinationPath $zip -Force
+          $hash = (Get-FileHash $zip -Algorithm SHA256).Hash.ToLower()
+          "$hash  $zip" | Out-File -FilePath "LiveTradutor-$tag-win64.sha256.txt" -Encoding ascii
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            LiveTradutor-${{ github.ref_name }}-win64.zip
+            LiveTradutor-${{ github.ref_name }}-win64.sha256.txt
+          generate_release_notes: true
